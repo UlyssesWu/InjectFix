@@ -433,6 +433,11 @@ namespace IFix.Core
                         *(long*)(&evaluationStackPointer->Value1) = underlyingType == typeof(long) ? 
                             Convert.ToInt64(obj) : (long)Convert.ToUInt64(obj) ;
                     }
+                    else if (underlyingType == typeof(uint))
+                    { 
+                        evaluationStackPointer->Type = ValueType.Integer;
+                        evaluationStackPointer->Value1 = unchecked((int) Convert.ToUInt32(obj));
+                    }
                     else
                     {
                         evaluationStackPointer->Type = ValueType.Integer;
