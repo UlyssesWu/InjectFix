@@ -1287,7 +1287,7 @@ namespace IFix
                 {
                     var exceptionHandler = body.ExceptionHandlers[i];
                     if (exceptionHandler.HandlerType == ExceptionHandlerType.Fault 
-                        && exceptionHandler.HandlerType == ExceptionHandlerType.Filter)
+                        || exceptionHandler.HandlerType == ExceptionHandlerType.Filter)
                     {
                         throw new NotImplementedException(exceptionHandler.HandlerType.ToString() + " no support!");
                     }
