@@ -1,6 +1,6 @@
 /*
  * Tencent is pleased to support the open source community by making InjectFix available.
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  * InjectFix is licensed under the MIT License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
@@ -34,6 +34,7 @@ namespace IFix.Core
 
         bool isNullableHasValue = false;
         bool isNullableValue = false;
+		bool isNullableGetValueOrDefault = false;
 
         public ReflectionMethodInvoker(MethodBase method)
         {
@@ -75,6 +76,7 @@ namespace IFix.Core
                 && method.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>);
             isNullableHasValue = isNullableMethod && method.Name == "get_HasValue";
             isNullableValue = isNullableMethod && method.Name == "get_Value";
+			isNullableGetValueOrDefault = isNullableMethod && method.Name == "GetValueOrDefault";
         }
 
         // #lizard forgives
@@ -156,6 +158,20 @@ namespace IFix.Core
                     {
                         ret = instance;
                     }
+					else if (isNullableGetValueOrDefault)
+					{
+						if(instance == null)
+						{
+							if(paramCount == 0)
+								ret = System.Activator.CreateInstance(returnType);
+							else
+								ret = args[0];
+						}
+						else
+						{
+							ret = instance;
+						}
+					}
                     else
                     {
                         if (method.IsStatic == false && instance == null)

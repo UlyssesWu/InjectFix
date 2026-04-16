@@ -1,6 +1,6 @@
 /*
  * Tencent is pleased to support the open source community by making InjectFix available.
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  * InjectFix is licensed under the MIT License, except for the third-party components listed in the file 'LICENSE' which may be subject to their corresponding license terms. 
  * This file is subject to the terms and conditions defined in file 'LICENSE', which is part of this source code package.
  */
@@ -1147,6 +1147,15 @@ namespace IFix
                 };
             }
 
+            if (method.IsSpecialName && (method.IsAddOn || method.IsRemoveOn || method.IsGetter || method.IsSetter) && !isNewMethod(method) && !isNewClass(method.DeclaringType) && isCompilerGenerated(method))
+            {
+                return new MethodIdInfo()
+                {
+                    Id = addExternMethod(callee, caller),
+                    Type = CallType.Extern
+                };
+            }
+
             if (method.Parameters.Any(p => p.ParameterType.IsPointer) || method.ReturnType.IsPointer)
             {
                 Console.WriteLine("Warning: unsafe method, " + method + " in " + method.DeclaringType);
@@ -1267,6 +1276,26 @@ namespace IFix
                                 Operand = addExternType(variable.VariableType)
                             });
                         }
+                        offsetAdd += 2;
+                    }
+                }
+
+                //修复out struct问题
+                for (int i = 0; i < method.Parameters.Count; i++)
+                {
+                    var parameter = method.Parameters[i];
+                    if (parameter.IsOut && parameter.ParameterType.GetElementType().IsValueType && !parameter.ParameterType.GetElementType().IsPrimitive)
+                    {
+                        code.Add(new Core.Instruction
+                        {
+                            Code = Core.Code.Ldarg,
+                            Operand = i + (method.HasThis ? 1 : 0)
+                        });
+                        code.Add(new Core.Instruction
+                        {
+                            Code = Core.Code.Initobj,
+                            Operand = addExternType(parameter.ParameterType.GetElementType())
+                        });
                         offsetAdd += 2;
                     }
                 }
@@ -3869,6 +3898,13 @@ namespace IFix
                 for (int i = 0; i < fields.Count; i++)
                 {
                     var fieldType = fields[i].FieldType;
+
+                    if (fieldType.IsArray || fieldType.IsGenericInstance)
+                    {
+                        addExternType(fieldType, fields[i].DeclaringType);
+                        continue;
+                    }
+
                     if (fieldType.IsGenericParameter)
                     {
                         var resolveType = ((GenericParameter)fieldType).ResolveGenericArgument(fields[i].DeclaringType);
